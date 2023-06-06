@@ -1,0 +1,47 @@
+version: '3.0'
+name: ${PROJECT_NAME}
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+    volumes:
+      - ../www:/var/www
+    container_name: ${PROJECT_NAME}-nginx
+    restart: always
+    depends_on:
+      - php-fpm
+    ports:
+      - "80:80"
+    environment:
+      UPLOAD_LIMIT: 128M
+      UPLOAD_MAX_FILESIZE: 128M
+
+  php-fpm:
+    build:
+      context: ./php-fpm
+    volumes:
+      - ../www:/var/www
+      - ./php-fpm/local.ini:/usr/local/etc/php/conf.d/local.ini
+    container_name: ${PROJECT_NAME}-php-fpm
+    restart: always
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql:/var/lib/mysql
+    container_name: ${PROJECT_NAME}-mysql
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_DATABASE=${MYSQL_DATABASE}"
+      - "MYSQL_USER=${MYSQL_USER}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+
+volumes:
+  mysql:
