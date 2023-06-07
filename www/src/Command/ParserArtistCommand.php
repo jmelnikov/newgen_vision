@@ -34,6 +34,9 @@ class ParserArtistCommand extends Command
     private const LINK_ARTIST_ALBUM_HTML = 0;
     private const LINK_ARTIST_JSON = 1;
 
+    // Время хранения кэша -- одна неделя
+    private const CACHE_SECONDS = 604800;
+
     public function __construct(EntityManagerInterface $entityManager, HttpClientInterface $httpClient, string $name = null)
     {
         parent::__construct($name);
@@ -74,6 +77,8 @@ class ParserArtistCommand extends Command
 
             $this->addTrackToDatabase($track);
         }
+
+        echo PHP_EOL, PHP_EOL, PHP_EOL;
 
         $this->io->success('Скрипт завершился без ошибок');
 
@@ -127,6 +132,23 @@ class ParserArtistCommand extends Command
 
     private function getRawJSONData(): bool
     {
+        $cacheDir = dirname(__DIR__, 2).'/var/cache/artists/';
+        if(!file_exists($cacheDir)) {
+            mkdir($cacheDir);
+        }
+
+        // Проверяем наличие файла кэша и времени его действия.
+        // Если время кэширования не истекло, то возвращаем его содержимое.
+        $cacheFile = $cacheDir.$this->artist_id.'.json';
+        if(file_exists($cacheFile)) {
+            $json = json_decode(file_get_contents($cacheFile));
+            if(time()-$json->cached < self::CACHE_SECONDS) {
+                $this->io->info(['Файл в кэше ещё свежий, используем его']);
+                $this->raw_json_data = $json->data;
+                return true;
+            }
+        }
+
         try {
             $content = $this->httpClient->request('GET', $this->getFullLink(self::LINK_ARTIST_JSON),
                 [
@@ -148,17 +170,16 @@ class ParserArtistCommand extends Command
             return false;
         }
 
+        // Если у Яндекса сработал антипарсинг, то они будут возвращать
+        // страницу с ошибкой. В этом случае, дальше обработку не производим.
         if(!$this->isCorrectJSON($content)) {
             return false;
         }
 
         $this->raw_json_data = json_decode($content);
 
-        // Если у Яндекса сработал антипарсинг, то они будут возвращать
-        // страницу с ошибкой. В этом случае, дальше обработку не производим.
-        if(!is_object($this->raw_json_data)) {
-            return false;
-        }
+        // Сохраняем файл в кэш
+        file_put_contents($cacheFile, json_encode(['cached' => time(), 'data' => $this->raw_json_data]));
 
         return true;
     }
