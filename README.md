@@ -27,3 +27,7 @@
 - `php bin/console parser:artist https://music.yandex.ru/artist/36800 --id`
 - `php bin/console parser:artist https://music.yandex.ru/artist/36800/tracks -i`
 - `php bin/console parser:artist 36800`
+
+# Дополнение
+Чтобы не натыкаться на бан от Яндекса каждый раз, можно использовать кэширование.
+Запуск сбора одной и тоже информации об одном артисте не имеет смысла чаще раза в несколько дней, а то и недель, так как новые песни выходят не каждый день, как правило.
