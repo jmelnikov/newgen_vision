@@ -75,7 +75,7 @@ class ParserArtistCommand extends Command
             $this->addTrackToDatabase($track);
         }
 
-        $this->io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+        $this->io->success('Скрипт завершился без ошибок');
 
         return Command::SUCCESS;
     }
